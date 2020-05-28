@@ -1,0 +1,42 @@
+
+ARG BASE_IMAGE=l4t-ml:r32.4.2-py3
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+#
+# install gosu
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y gosu; \
+	rm -rf /var/lib/apt/lists/*; \
+# verify that the binary works
+	gosu nobody true
+
+RUN useradd --shell /bin/bash -u 1000 -c "" -m brian && usermod -a -G dialout brian
+# enable i2c permissions
+RUN usermod -aG i2c brian
+# setup Jetson.GPIO
+RUN python3 -m pip install git+https://github.com/NVIDIA/jetson-gpio.git
+RUN groupadd -f -r gpio
+RUN usermod -a -G gpio brian
+#
+# Servo controller py libs
+RUN pip3 install adafruit-blinka
+RUN pip3 install adafruit-circuitpython-pca9685
+RUN pip3 install adafruit-circuitpython-servokit
+#
+# jetracer 
+RUN python3 -m pip install git+https://github.com/bunderhi/jetracer.git
+
+
+# create and start as LOCAL_USER_ID
+#COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+#ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+#CMD ["/bin/bash"]
+CMD /bin/bash -c "jupyter lab --ip 0.0.0.0 --port 8888 --allow-root &> /var/log/jupyter.log" & \
+        echo "allow 10 sec for JupyterLab to start @ http://localhost:8888 (password nvidia)" && \
+        echo "JupterLab logging location:  /var/log/jupyter.log  (inside the container)" && \
+        /bin/bash
+

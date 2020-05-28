@@ -4,13 +4,14 @@ CONTAINER_IMAGE="nvcr.io/nvidian/nvidia-l4t-base:r32.4"
 
 USER_VOLUME=""
 USER_COMMAND=""
-
+INTERACTIVE=" -it "
 show_help() {
     echo " "
     echo "usage: Starts the Docker container and runs a user-specified command"
     echo " "
     echo "   ./scripts/docker_run.sh --container DOCKER_IMAGE"
     echo "                           --volume HOST_DIR:MOUNT_DIR"
+    echo "                           --name CONTAINER_NAME"
     echo "                           --run RUN_COMMAND"
     echo " "
     echo "args:"
@@ -46,6 +47,9 @@ while :; do
             show_help    # Display a usage synopsis.
             exit
             ;;
+        -d|--detach)
+               INTERACTIVE=" -d -P " # replace -it option with -d -P
+            ;;
         -c|--container)       # Takes an option argument; ensure it has been specified.
             if [ "$2" ]; then
                 CONTAINER_IMAGE=$2
@@ -74,6 +78,20 @@ while :; do
         --volume=)         # Handle the case of an empty --image=
             die 'ERROR: "--volume" requires a non-empty option argument.'
             ;;
+        -n|--name)
+            if [ "$2" ]; then
+                CONTAINER_NAME=" --name $2 "
+                shift
+            else
+                die 'ERROR: "--name" requires a non-empty option argument.'
+            fi
+            ;;
+        --name=?*)
+            CONTAINER_NAME=" --name ${1#*=} " # Delete everything up to "=" and assign the remainder.
+            ;;
+        --name=)         # Handle the case of an empty --image=
+            die 'ERROR: "--name" requires a non-empty option argument.'
+            ;;
         -r|--run)
             if [ "$2" ]; then
                 shift
@@ -97,13 +115,15 @@ while :; do
 done
 
 #echo "CONTAINER_IMAGE: $CONTAINER_IMAGE"
+echo "CONTAINER_NAME: $CONTAINER_NAME"
 #echo "USER_VOLUME:     $USER_VOLUME"
 #echo "USER_COMMAND:    '$USER_COMMAND'"
 
 # run the container
-sudo xhost +si:localuser:root
+sudo xhost +
 
-sudo docker run --runtime nvidia -it --rm --network host -e DISPLAY=$DISPLAY \
+sudo docker run --runtime nvidia -it --rm --privileged --network host -e DISPLAY=$DISPLAY \
+    --env=LOCAL_USER_ID="$(id -u)" \
     -v /tmp/.X11-unix/:/tmp/.X11-unix \
-    $USER_VOLUME $CONTAINER_IMAGE $USER_COMMAND
+    $CONTAINER_NAME $USER_VOLUME $CONTAINER_IMAGE $USER_COMMAND
 
