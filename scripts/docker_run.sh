@@ -122,7 +122,7 @@ echo "CONTAINER_NAME: $CONTAINER_NAME"
 # run the container
 sudo xhost +
 
-sudo docker run --runtime nvidia -it --rm --privileged --network host -e DISPLAY=$DISPLAY \
+sudo docker run --runtime nvidia -itd --rm --privileged --network host -e DISPLAY=$DISPLAY \
     --env=LOCAL_USER_ID="$(id -u)" \
     -v /tmp/.X11-unix/:/tmp/.X11-unix \
     $CONTAINER_NAME $USER_VOLUME $CONTAINER_IMAGE $USER_COMMAND
