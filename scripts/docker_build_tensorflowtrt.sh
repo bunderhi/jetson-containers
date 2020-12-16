@@ -3,5 +3,5 @@
 set -e
 			  
 # TensorFlow + 
-sh ./scripts/docker_build.sh tensorflowtrt:0.1 Dockerfile.tensorflowTRT
+sh ./scripts/docker_build.sh tensorflowtrt:0.1 Dockerfile.tensorflowtrt
 
